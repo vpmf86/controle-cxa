@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreador de Respostas CXA - Torre</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #00ff6a;
+            --secondary-color: #00cc55;
+            --success-color: #00ff6a;
+            --danger-color: #ff4757;
+            --warning-color: #ffa502;
+            --light-bg: #1a202c;
+            --border-color: #2d3748;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f1419;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(90deg, #ffffff 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .card {
+            background: var(--light-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 30px;
+            margin-bottom: 25px;
+            animation: fadeInUp 0.6s ease-out;
+            border-top: 3px solid var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="search"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background-color: #3a4555;
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 255, 106, 0.1);
+        }
+
+        .form-group input:disabled {
+            background-color: var(--light-bg);
+            cursor: not-allowed;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #3a4555;
+            border: 2px solid var(--primary-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .suggestion-item {
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            color: var(--text-primary);
+        }
+
+        .suggestion-item:hover {
+            background-color: #4a5667;
+        }
+
+        .suggestions-list.active {
+            display: block;
+        }
+
+        .suggestion-item strong {
+            color: var(--primary-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: #3a4655;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5667;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .save-status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .save-status.show {
+            display: block;
+            background: linear-gradient(135deg, rgba(0, 255, 106, 0.15) 0%, rgba(0, 204, 85, 0.1) 100%);
+            color: #00ff6a;
+            border: 2px solid #00ff6a;
+        }
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .calendar-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            min-width: 200px;
+        }
+
+        .month-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .month-nav button {
+            padding: 10px 16px;
+            border: 2px solid var(--border-color);
+            background: var(--light-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .month-nav button:hover {
+            background: var(--light-bg);
+            border-color: var(--secondary-color);
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: 700;
+            color: var(--secondary-color);
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            background: var(--light-bg);
+            transition: all 0.3s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .day.empty {
+            background: var(--light-bg);
+            cursor: not-allowed;
+            border-color: transparent;
+        }
+
+        .day.weekend {
+            background: var(--light-bg);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            border-color: #cbd5e1;
+        }
+
+        .day.weekday:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 255, 106, 0.1);
+            transform: scale(1.05);
+        }
+
+        .day.marked {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .day.marked::after {
+            content: '✓';
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .stat-box {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .stat-box h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #3a4555 0%, #44505f 100%);
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        
+        .info-box strong {
+            color: var(--primary-color);
+        }
+
+        /* Tabela de Resumo */
+        .summary-section {
+            margin-top: 40px;
+        }
+
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--secondary-color);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        table thead {
+            background: var(--light-bg);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        table th,
+        table td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        table tbody tr:hover {
+            background: var(--light-bg);
+        }
+
+        table tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        table input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px 10px;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .action-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            transform: scale(1.2);
+        }
+
+        table tr.selected {
+            background: rgba(0, 255, 106, 0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .status-pending {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .status-completed {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-none {
+            color: #999;
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            grid-column: 1/-1;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-txt {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .export-txt:hover {
+            background: #475569;
+        }
+
+        .export-xlsx {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .export-xlsx:hover {
+            background: var(--secondary-color);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .card { padding: 20px; }
+            .form-row { grid-template-columns: 1fr; }
+            .calendar-header { flex-direction: column; align-items: stretch; }
+            .month-nav { justify-content: center; }
+            .weekday { font-size: 0.75rem; padding: 8px 4px; }
+            .day { font-size: 0.85rem; }
+            .controls { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+            .stats { grid-template-columns: 1fr; }
+            table { font-size: 0.85rem; }
+            table th, table td { padding: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .header h1 { font-size: 1.5rem; }
+            .card { padding: 15px; margin-bottom: 20px; }
+            .calendar-grid { gap: 6px; }
+            .day { font-size: 0.75rem; }
+            table { font-size: 0.8rem; }
+            table th, table td { padding: 8px; }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rastreador de Respostas CXA</h1>
+            <p>Controle de atividades diárias - Torre de Controle - CXA</p>
+        </div>
+
+        <div class="card">
+            <div class="info-box">
+                <strong>ℹ️ Selecione um CXA:</strong> Digite para buscar por concessionário, cidade ou estado. A tabela consolidada mostrará todos os CXAs registrados.
+            </div>
+
+            <div class="form-row">
+                <div class="form-group search-wrapper">
+                    <label for="cxaSearch">🔍 Buscar CXA</label>
+                    <input type="search" id="cxaSearch" placeholder="Digite concessionário, cidade ou estado...">
+                    <div class="suggestions-list" id="suggestionsList"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="concessionaire">🏢 Concessionário</label>
+                    <input type="text" id="concessionaire" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">🏙️ Cidade</label>
+                    <input type="text" id="city" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="state">📍 Estado</label>
+                    <input type="text" id="state" readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="responsible">👤 CXA Responsável</label>
+                    <input type="text" id="responsible" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="currentDate">📅 Data Atual</label>
+                    <input type="text" id="currentDate" readonly>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-success" id="markAllBtn">✓ Marcar Tudo</button>
+                <button class="btn btn-danger" id="clearAllBtn">✕ Limpar Tudo</button>
+                <button class="btn btn-secondary" id="newCXABtn">➕ Novo CXA</button>
+            </div>
+
+            <div class="export-options">
+                <button class="export-btn export-txt" id="exportTxtBtn">📄 Exportar em TXT</button>
+                <button class="export-btn export-xlsx" id="exportXlsxBtn">📊 Exportar em XLSX</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="calendar-header">
+                <h2 class="calendar-title" id="monthYear"></h2>
+                <div class="month-nav">
+                    <button id="prevMonth">← Anterior</button>
+                    <button id="nextMonth">Próximo →</button>
+                </div>
+            </div>
+
+            <div class="weekdays">
+                <div class="weekday">SEG</div>
+                <div class="weekday">TER</div>
+                <div class="weekday">QUA</div>
+                <div class="weekday">QUI</div>
+                <div class="weekday">SEX</div>
+                <div class="weekday">SÁB</div>
+                <div class="weekday">DOM</div>
+            </div>
+
+            <div class="calendar-grid" id="calendar"></div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <h3>Total de Dias Úteis</h3>
+                    <div class="value" id="totalWorkdays">0</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Respostas Recebidas</h3>
+                    <div class="value" id="totalMarked">0</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Respostas Pendentes</h3>
+                    <div class="value" id="totalPending">0</div>
+                </div>
+                <div class="stat-box" style="border-left-color: var(--success-color);">
+                    <h3>Taxa de Resposta</h3>
+                    <div class="value" id="responseRate">0%</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 25px;">
+                <button class="btn btn-primary" id="saveBtn" style="background: #16a34a; font-size: 1.1rem; padding: 15px 40px;">
+                    💾 Salvar Dados
+                </button>
+                <div class="save-status" id="saveStatus">✓ Dados salvos com sucesso!</div>
+            </div>
+        </div>
+
+        <div class="card summary-section">
+            <h2 class="summary-title">📊 Resumo Consolidado - Todos os CXAs</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Concessionário</th>
+                            <th>Cidade</th>
+                            <th>Estado</th>
+                            <th>CXA Responsável</th>
+                            <th>Status</th>
+                            <th>Dias Respondidos</th>
+                            <th>Dias Não Respondidos</th>
+                            <th>Taxa de Resposta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <tr>
+                            <td colspan="9" class="no-data-message">Nenhum CXA registrado ainda. Selecione e marque dias para visualizar o resumo consolidado.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-danger" id="deleteSelectedBtn" onclick="window.deleteSelectedCXAs()">
+                    🗑️ Deletar Selecionados
+                </button>
+                <button class="btn btn-secondary" id="exportTableBtn">
+                    📊 Exportar Tabela (Excel)
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+        </div>
+    </div>
+
+    <script>
+                const cxasList = [
+  {
+    "concessionaire": "Rodobens",
+    "city": "São José do Rio Preto",
+    "state": "SP",
+    "responsible": "João Flávio de Carvalho",
+    "phone": "17 9 9172-8403",
+    "email": "joao.flavio@rodobens.com.br",
+    "manager": "Patricia Mara da Silva Lima",
+    "managerPhone": "17 98179-1193",
+    "managerEmail": "patricia.lima@rodobens.com.br",
+    "assistant": "Victória Oliveira Silva Batista",
+    "assistantPhone": "17 99209-0318",
+    "assistantEmail": "victoria.batista@rodobens.com.br"
+  },
+  {
+    "concessionaire": "Rodobens",
+    "city": "Caruaru",
+    "state": "PE",
+    "responsible": "Eduarda de Lima Sá Teles",
+    "phone": "81 9 9924-0266",
+    "email": "eduarda.teles@rodobens.com.br",
+    "manager": "Leomir Arruda",
+    "managerPhone": "81 99960-9619",
+    "managerEmail": "leomir.arruda@rodobens.com.br",
+    "assistant": "Anna Izabel da Silva",
+    "assistantPhone": "81 98110-3928",
+    "assistantEmail": "anna.silva@rodobens.com.br"
+  },
+  {
+    "concessionaire": "Rodobens",
+    "city": "Salvador ",
+    "state": "BA",
+    "responsible": "Jane Santos Do Nascimento",
+    "phone": "71 4009-8232",
+    "email": "jane.nascimento@rodobens.com.br",
+    "manager": "Edson Sena ",
+    "managerPhone": "69 98100-1726",
+    "managerEmail": "edson.sena@rodobens.com.br",
+    "assistant": "Tais De Jesus Ramos",
+    "assistantPhone": "71 4009-8232",
+    "assistantEmail": "tais.ramos@rodobens.com.br"
+  },
+  {
+    "concessionaire": "Rodobens",
+    "city": "Rondonópolis",
+    "state": "MT",
+    "responsible": "Clodoaldo da Silva Pereira",
+    "phone": "66 9 8124-3816",
+    "email": "clodoaldo.pereira@rodobens.com.br",
+    "manager": "Clodoaldo da Silva Pereira",
+    "managerPhone": "66 8124-3816",
+    "managerEmail": "clodoaldo.pereira@rodobens.com.br",
+    "assistant": "Reginaldo Barros Freitas",
+    "assistantPhone": "66 9969-3976",
+    "assistantEmail": "rebarros@rodobens.com.br"
+  },
+  {
+    "concessionaire": "Rodobens",
+    "city": "Escritório regional",
+    "state": "BR",
+    "responsible": "Amanda Volpato",
+    "phone": "47 99607-5532",
+    "email": "amanda.esper@rodobens.com.br",
+    "manager": "Sardinha",
+    "managerPhone": "17 992542758",
+    "managerEmail": null,
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Rodobens",
+    "city": "Escritório regional",
+    "state": "BR",
+    "responsible": "Fernando Helena",
+    "phone": "17 991797281",
+    "email": "fernando.helena@rodobens.com.br",
+    "manager": "Sardinha",
+    "managerPhone": "18 992542758",
+    "managerEmail": null,
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Itajaí",
+    "state": "SC",
+    "responsible": "Patricia Formigari",
+    "phone": "47 9 8804-3369",
+    "email": "patricia.formigari@ingaveiculos.com.br ",
+    "manager": "Adriana Lemmers",
+    "managerPhone": "47 98817-6024",
+    "managerEmail": "adriana.lemmers@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "São Miguel do Oeste",
+    "state": "SC",
+    "responsible": "Ivonete Faller",
+    "phone": "49 9 8815-8463",
+    "email": "ivonete.faller@ingaveiculos.com.br",
+    "manager": "Everton Gelain/ Elmo Gomes",
+    "managerPhone": "46 99982-0572 / 18 9 81276986",
+    "managerEmail": "everton.gelain@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Cascavel",
+    "state": "PR",
+    "responsible": "Victor Donato",
+    "phone": null,
+    "email": "victor.donato@ingaveiculos.com.br",
+    "manager": "Douglas Caus/ Elmo Gomes",
+    "managerPhone": "45 99962-8683 // 18 9 81276986",
+    "managerEmail": "douglas.caus@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Videira",
+    "state": "SC",
+    "responsible": "Gustavo Amaral",
+    "phone": null,
+    "email": "gustavo.amaral@ingaveiculos.com.br",
+    "manager": "Alessandro/ Elmo Gomes",
+    "managerPhone": "49 99950-0246 // 18 9 81276986",
+    "managerEmail": "alessandro@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Maringá",
+    "state": "PR",
+    "responsible": "Lorhany Ribas",
+    "phone": "44 991134647 ou 44 33551620",
+    "email": "lorhany.ribas@ingaveiculos.com.br",
+    "manager": "João Versari / Elmo Gomes",
+    "managerPhone": "44 99174-7687 // 18 9 81276986",
+    "managerEmail": "joao.versari@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Vitorino",
+    "state": "PR",
+    "responsible": "Mayara Nascimento",
+    "phone": "46 99115-1281",
+    "email": "mayara.mafioletti@ingaveiculos.com.br",
+    "manager": "Ricardo Barros / Elmo Gomes",
+    "managerPhone": "46 99105-0261 // 18 9 81276986",
+    "managerEmail": "ricardo.barros@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Içara",
+    "state": "SC",
+    "responsible": "Gene Martins",
+    "phone": "48 9 99994-2201",
+    "email": "gene.martins@ingaveiculos.com.br",
+    "manager": "DIVONEI SILVA  / Edilson Barban",
+    "managerPhone": "64 99278-0894 // 48 9 9807-0058",
+    "managerEmail": "divonei.silva@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Araçatuba",
+    "state": "SP",
+    "responsible": "Vitor Gutierre",
+    "phone": "18 9 8800-8424 ",
+    "email": "victor.gutierre@ingaveiculos.com.br",
+    "manager": "CARLOS BINI  / Edilson Barban",
+    "managerPhone": "18 99725-9506 // 48 9 9807-0058",
+    "managerEmail": "carlos.bini@ingaveiculos.com.br",
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Ingá",
+    "city": "Uberlândia",
+    "state": "MG",
+    "responsible": "Larissa Silva",
+    "phone": "34 99824-5540 ",
+    "email": "larissa.goncalves@ingaveiculos.com.br",
+    "manager": "LUIS COTRIN  / Edilson Barban",
+    "managerPhone": "34 99982-8266 // 48 9 9807-0058",
+    "managerEmail": "luis.cotrin@ingaveiculos.com.br",
+    "assistant": "Brenner",
+    "assistantPhone": "64 9 9600-5005",
+    "assistantEmail": "brener.rodrigues@ingaveiculos.com.br"
+  },
+  {
+    "concessionaire": "Vitória Diesel",
+    "city": "Cariacica",
+    "state": "ES ",
+    "responsible": "Willian Gleser Rosindo",
+    "phone": "27 9 9836-1950",
+    "email": "WillianR@vitoriadiesel.com.br",
+    "manager": "Rafael Lima Dutra",
+    "managerPhone": "27 999449517",
+    "managerEmail": "rafaell@aguiabranca.com.br",
+    "assistant": "Paulo Henrique Abrahão Santos",
+    "assistantPhone": "27 99256-3633",
+    "assistantEmail": "paulosantos@aguiabranca.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "São Gonçalo",
+    "state": "RJ",
+    "responsible": "Christian Fernandes Pereira",
+    "phone": "21 9 9244-2141",
+    "email": "christian.pereira@mardisa.com.br",
+    "manager": "Luís Carlos Corrêa",
+    "managerPhone": "21 99517-1777",
+    "managerEmail": "luis.correa@mardisa.com.br",
+    "assistant": "Mônica Gomes da Silva Gavina",
+    "assistantPhone": "21 99804-0290",
+    "assistantEmail": "monica.gavina@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Nossa Senhora do Socorro ",
+    "state": "SE",
+    "responsible": "Caio Feitosa",
+    "phone": "79 9 8102-9211",
+    "email": "caio.feitosa@mardisa.com.br",
+    "manager": "Anderson Correa",
+    "managerPhone": "79 98853-7814",
+    "managerEmail": "anderson.correa@mardisa.com.br",
+    "assistant": "Josefa Medeiros",
+    "assistantPhone": "79 98171-0841",
+    "assistantEmail": "josefa.medeiros@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Brasília",
+    "state": "DF",
+    "responsible": "Dayanne Nunes Brito",
+    "phone": "61 9 9446-0334",
+    "email": "dayanne.brito@mardisa.com.br",
+    "manager": "Rafael Lima Leite Ferreira",
+    "managerPhone": "61 99176-4533",
+    "managerEmail": "rafael.ferreira@mardisa.com.br",
+    "assistant": "Paulo Guilherme Tavares",
+    "assistantPhone": "27 99873-9585",
+    "assistantEmail": "paulo.tavares@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Campos dos Goytacazes",
+    "state": "RJ",
+    "responsible": "Alan Meireles",
+    "phone": "21 9 6609-4613",
+    "email": "alan.meireles@mardisa.com.br",
+    "manager": "Everson Tadeu Z. Prezilius",
+    "managerPhone": "22 99218-0402",
+    "managerEmail": null,
+    "assistant": "Mateus Queiroz Barreto Viana",
+    "assistantPhone": "22 99254-3224",
+    "assistantEmail": "mateus.viana@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Teresina",
+    "state": "PI",
+    "responsible": "Nordia Antonela Lima Ferreira",
+    "phone": "86 9 9992-2952",
+    "email": "nordia@mardisa.com.br",
+    "manager": "Richeli Alves dos Santos Sousa",
+    "managerPhone": "86 98825-0848",
+    "managerEmail": "richelli@mardisa.com.br",
+    "assistant": "Rayane Ferreira",
+    "assistantPhone": "86 99448-3051",
+    "assistantEmail": "agendamento.the@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Manaus",
+    "state": "AM",
+    "responsible": "Antoniel Santos",
+    "phone": "92 9 8818-7569",
+    "email": "antoniel.santos@mardisa.com.br",
+    "manager": "Givanildo Galdino",
+    "managerPhone": "92 988024620",
+    "managerEmail": "givanildo.galdino@mardisa.com.br",
+    "assistant": "Débora Ester",
+    "assistantPhone": "92 99351-1772",
+    "assistantEmail": "debora.souza@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "Boa Vista",
+    "state": "RR",
+    "responsible": "Jucélio Moraeis",
+    "phone": "95 9 9136-6201",
+    "email": "jucelio.morais@mardisa.com.br",
+    "manager": "Givanildo Galdino",
+    "managerPhone": "92 988024620",
+    "managerEmail": "givanildo.galdino@mardisa.com.br",
+    "assistant": "Samuel Felipe",
+    "assistantPhone": "95 98412-9537",
+    "assistantEmail": "samuel.silva@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Mardisa Veículos",
+    "city": "São Luis",
+    "state": "MA",
+    "responsible": "Pedro Neilano Sousa Albuquerque",
+    "phone": "98 9 8886-9226",
+    "email": "pedro.albuquerque@mardisa.com.br",
+    "manager": "Emidio Aguiar",
+    "managerPhone": "98 984272887",
+    "managerEmail": null,
+    "assistant": "Robson Serra",
+    "assistantPhone": "98 98802-7267",
+    "assistantEmail": "robsonserra@mardisa.com.br"
+  },
+  {
+    "concessionaire": "Minas Máquinas",
+    "city": "Contagem",
+    "state": "MG",
+    "responsible": "Romulo Augusto Viana de Morais ",
+    "phone": "31 9 8406 3394",
+    "email": "romuloaugusto@minasmaquinas.com.br",
+    "manager": "João Clarete da Silveira",
+    "managerPhone": "31 9 9069 1086",
+    "managerEmail": "joaoclarete@minasmaquinas.com.br",
+    "assistant": "Karen Dos Santos Souza",
+    "assistantPhone": "31 3369-1815",
+    "assistantEmail": "karen.souza@minasmaquinas.com.br"
+  },
+  {
+    "concessionaire": "Minas Máquinas",
+    "city": "Contagem",
+    "state": "MG",
+    "responsible": "Romulo Augusto Viana de Morais ",
+    "phone": "31 9 8406 3394",
+    "email": "romuloaugusto@minasmaquinas.com.br",
+    "manager": "João Clarete da Silveira",
+    "managerPhone": "31 9 9069 1086",
+    "managerEmail": "joaoclarete@minasmaquinas.com.br",
+    "assistant": "Karen Dos Santos Souza",
+    "assistantPhone": "31 3369-1815",
+    "assistantEmail": "karen.souza@minasmaquinas.com.br"
+  },
+  {
+    "concessionaire": "Minas Máquinas",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "responsible": "Romulo Augusto Viana de Morais ",
+    "phone": "31 9 8406 3394",
+    "email": "romuloaugusto@minasmaquinas.com.br",
+    "manager": "João Clarete da Silveira",
+    "managerPhone": "31 9 9069 1086",
+    "managerEmail": "joaoclarete@minasmaquinas.com.br",
+    "assistant": "Karen Dos Santos Souza",
+    "assistantPhone": "31 3369-1815",
+    "assistantEmail": "karen.souza@minasmaquinas.com.br"
+  },
+  {
+    "concessionaire": "Minas Máquinas",
+    "city": "Ubá",
+    "state": "MG",
+    "responsible": "Romulo Augusto Viana de Morais ",
+    "phone": "31 9 8406 3394",
+    "email": "romuloaugusto@minasmaquinas.com.br",
+    "manager": "João Clarete da Silveira",
+    "managerPhone": "31 9 9069 1086",
+    "managerEmail": "joaoclarete@minasmaquinas.com.br",
+    "assistant": "Karen Dos Santos Souza",
+    "assistantPhone": "31 3369-1815",
+    "assistantEmail": "karen.souza@minasmaquinas.com.br"
+  },
+  {
+    "concessionaire": "Mecasul/Savar",
+    "city": "Canoas",
+    "state": "RS",
+    "responsible": "Kauene Marques da Rosa",
+    "phone": "55 9 9614-0367",
+    "email": "Kauene.rosa@mecasul.com.br",
+    "manager": "Jurandir Bocalon",
+    "managerPhone": "51 99961-2316",
+    "managerEmail": "jurandir.bocalon@mecasul.com.br",
+    "assistant": "Yasmin Moraies Chagas",
+    "assistantPhone": "51 3086-6000",
+    "assistantEmail": "yasmin.chagas@mecasul.com.br"
+  },
+  {
+    "concessionaire": "Mecasul/Savar",
+    "city": "Porto Alegre",
+    "state": "RS",
+    "responsible": "Kauene Marques da Rosa",
+    "phone": "55 9 9614-0367",
+    "email": "Kauene.rosa@mecasul.com.br",
+    "manager": "Jurandir Bocalon",
+    "managerPhone": "51 99961-2317",
+    "managerEmail": "jurandir.bocalon@mecasul.com.br",
+    "assistant": "Yasmin Moraies Chagas",
+    "assistantPhone": "51 3086-6000",
+    "assistantEmail": "yasmin.chagas@mecasul.com.br"
+  },
+  {
+    "concessionaire": "Savana",
+    "city": "SJ Pinhais",
+    "state": "PR",
+    "responsible": "Carlos Henrique Pereira",
+    "phone": "47 9 9993-5882",
+    "email": "carlospereira@savana.com.br",
+    "manager": null,
+    "managerPhone": null,
+    "managerEmail": null,
+    "assistant": null,
+    "assistantPhone": null,
+    "assistantEmail": null
+  },
+  {
+    "concessionaire": "Mallon",
+    "city": "Mafra",
+    "state": "SC",
+    "responsible": "HILLARY RAMOS",
+    "phone": "(42)9979-7893",
+    "email": "scm.u@mallon.com.br",
+    "manager": "DANIELE C. BELENA",
+    "managerPhone": "(42)3521-3207",
+    "managerEmail": "scm@mallon.com.br",
+    "assistant": "ANDRÉ LUIZ WOLF RODRIGUES",
+    "assistantPhone": "(47)9105-2232",
+    "assistantEmail": "treinamento.m2@mallon.com.br"
+  },
+  {
+    "concessionaire": "Prodoeste",
+    "city": "Uberaba",
+    "state": "MG",
+    "responsible": "RAFAELLA RAMPIN",
+    "phone": "34 9 9915 9662",
+    "email": "rafaella.moraes@prodoeste.com.br",
+    "manager": "Wagner Alves",
+    "managerPhone": "34 9 9233 4794",
+    "managerEmail": "wagner.alves@prodoeste.com.br",
+    "assistant": "ANA LUIZA",
+    "assistantPhone": "34 9 9904 9640",
+    "assistantEmail": "ana.pereira@prodoeste.com.br"
+  },
+  {
+    "concessionaire": "Prodoeste",
+    "city": "Araxa",
+    "state": "MG",
+    "responsible": "EDIVÂNIA PAULA",
+    "phone": "34 9 8878 2513",
+    "email": "edivania.paula@prodoeste.com.br",
+    "manager": "Wagner Alves",
+    "managerPhone": "34 9 9233 4794",
+    "managerEmail": "wagner.alves@prodoeste.com.br",
+    "assistant": "MATHEUS ",
+    "assistantPhone": "34 9 9945 2148",
+    "assistantEmail": "matheus.candido@prodoeste.com.br"
+  }
+];
+        let currentDate = new Date();
+        let markedDays = {};
+        let selectedCXA = null;
+        const STORAGE_KEY = 'cxa_tracker_data';
+
+        // Função para limpar registro de CXA - Definida no escopo global
+
+        function init() {
+            // Limpar dados antigos com formato incorreto
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    const markedDaysKeys = Object.keys(parsed.markedDays || {});
+                    
+                    // Verificar se existem chaves com formato antigo (com espaços ou quebras de linha)
+                    let hasOldFormat = false;
+                    for (const key of markedDaysKeys) {
+                        const parts = key.split('|');
+                        if (parts.length === 3) {
+                            const city = parts[1];
+                            // Se a cidade tem quebra de linha ou espaços duplos, é formato antigo
+                            if (city.includes('\n') || city.includes('  ') || city !== city.trim()) {
+                                hasOldFormat = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Se tem formato antigo, limpar tudo
+                    if (hasOldFormat) {
+                        console.log('Detectado formato antigo. Limpando dados...');
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+                } catch (e) {
+                    console.log('Erro ao verificar dados antigos');
+                }
+            }
+            
+            // Normalizar cities no cxasList para remover espaços em branco extras
+            cxasList.forEach(cxa => {
+                if (cxa.city) {
+                    cxa.city = cxa.city.replace(/\s+/g, ' ').trim();
+                }
+            });
+            
+            setCurrentDate();
+            loadData();
+            setupSearchListener();
+            setupEventListeners();
+            updateSummaryTable();
+            renderCalendar();
+        }
+
+        function setCurrentDate() {
+            const today = new Date();
+            const dia = String(today.getDate()).padStart(2, '0');
+            const mes = String(today.getMonth() + 1).padStart(2, '0');
+            const ano = today.getFullYear();
+            document.getElementById('currentDate').value = `${dia}/${mes}/${ano}`;
+        }
+
+        function setupSearchListener() {
+            const searchInput = document.getElementById('cxaSearch');
+            const suggestionsList = document.getElementById('suggestionsList');
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                if (query.length === 0) {
+                    suggestionsList.classList.remove('active');
+                    return;
+                }
+
+                const filtered = cxasList.filter(cxa => {
+                    const displayText = `${cxa.concessionaire} ${cxa.city} ${cxa.state}`.toLowerCase();
+                    return displayText.includes(query);
+                });
+
+                if (filtered.length === 0) {
+                    suggestionsList.innerHTML = '<div class="suggestion-item">Nenhum CXA encontrado</div>';
+                } else {
+                    suggestionsList.innerHTML = filtered.map((cxa) => `
+                        <div class="suggestion-item" onclick="selectCXA(${cxasList.indexOf(cxa)})">
+                            <strong>${cxa.concessionaire}</strong> - ${cxa.city}, ${cxa.state}
+                            <br><small>Responsável: ${cxa.responsible.split(' ')[0]}</small>
+                        </div>
+                    `).join('');
+                }
+                suggestionsList.classList.add('active');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target !== searchInput) {
+                    suggestionsList.classList.remove('active');
+                }
+            });
+        }
+
+        function selectCXA(index) {
+            selectedCXA = cxasList[index];
+            document.getElementById('cxaSearch').value = '';
+            document.getElementById('concessionaire').value = selectedCXA.concessionaire;
+            document.getElementById('city').value = selectedCXA.city;
+            document.getElementById('state').value = selectedCXA.state;
+            document.getElementById('responsible').value = selectedCXA.responsible.split(' ')[0];
+            document.getElementById('suggestionsList').classList.remove('active');
+            saveData();
+            renderCalendar();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            document.getElementById('markAllBtn').addEventListener('click', markAll);
+            document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+            document.getElementById('saveBtn').addEventListener('click', saveAndShowFeedback);
+            document.getElementById('exportTxtBtn').addEventListener('click', exportTXT);
+            document.getElementById('exportXlsxBtn').addEventListener('click', exportXLSX);
+            document.getElementById('exportTableBtn').addEventListener('click', exportTableToExcel);
+            
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.style.opacity = '0.5';
+                deleteBtn.addEventListener('click', window.deleteSelectedCXAs);
+            }
+            
+            document.getElementById('newCXABtn').addEventListener('click', newCXA);
+        }
+
+        function renderCalendar() {
+            if (!selectedCXA) {
+                document.getElementById('calendar').innerHTML = '<div class="no-data-message">Selecione um CXA para começar</div>';
+                updateStats(0, 0, 0);
+                updateSummaryTable();
+                return;
+            }
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            document.getElementById('monthYear').textContent = `${monthNames[month]} ${year}`;
+
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day empty';
+                calendar.appendChild(emptyDay);
+            }
+
+            let workdayCount = 0, markedCount = 0;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                const dateKey = `${selectedCXA.concessionaire}|${selectedCXA.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                const isMarked = markedDays[dateKey] || false;
+
+                dayElement.className = 'day';
+                dayElement.textContent = day;
+
+                if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    dayElement.classList.add('weekend');
+                } else {
+                    dayElement.classList.add('weekday');
+                    workdayCount++;
+                    if (isMarked) {
+                        dayElement.classList.add('marked');
+                        markedCount++;
+                    }
+                    dayElement.addEventListener('click', () => toggleDay(dateKey, dayElement));
+                }
+
+                calendar.appendChild(dayElement);
+            }
+
+            updateStats(workdayCount, markedCount, workdayCount - markedCount);
+            updateSummaryTable();
+        }
+
+        function toggleDay(dateKey, element) {
+            if (markedDays[dateKey]) {
+                delete markedDays[dateKey];
+                element.classList.remove('marked');
+            } else {
+                markedDays[dateKey] = true;
+                element.classList.add('marked');
+            }
+            saveData();
+            renderCalendar();
+        }
+
+        function markAll() {
+            if (!selectedCXA) { alert('Selecione um CXA primeiro'); return; }
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(year, month, day);
+                if (date.getDay() !== 0 && date.getDay() !== 6) {
+                    const dateKey = `${selectedCXA.concessionaire}|${selectedCXA.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                    markedDays[dateKey] = true;
+                }
+            }
+
+            saveData();
+            renderCalendar();
+        }
+
+        function clearAll() {
+            if (!selectedCXA) { 
+                alert('Selecione um CXA primeiro'); 
+                return; 
+            }
+
+            // Mostrar modal de confirmação
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            
+            document.getElementById('clearAllMessage').textContent = `Deseja limpar todos os marcadores de ${monthNames[month]} de ${year}?`;
+            const modal = document.getElementById('clearAllModal');
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            
+            pendingClearAll = true;
+        }
+
+        window.confirmClearAll = function() {
+            if (!pendingClearAll || !selectedCXA) return;
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            for (let day = 1; day <= lastDay; day++) {
+                const dateKey = `${selectedCXA.concessionaire}|${selectedCXA.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                delete markedDays[dateKey];
+            }
+
+            saveData();
+            renderCalendar();
+            updateSummaryTable();
+            
+            document.getElementById('clearAllModal').style.display = 'none';
+            pendingClearAll = false;
+            
+            const statusDiv = document.getElementById('saveStatus');
+            if (statusDiv) {
+                statusDiv.textContent = '✓ Marcadores limpos com sucesso!';
+                statusDiv.classList.add('show');
+                setTimeout(() => { statusDiv.classList.remove('show'); }, 3000);
+            }
+        };
+
+        window.cancelClearAll = function() {
+            document.getElementById('clearAllModal').style.display = 'none';
+            pendingClearAll = false;
+        };
+
+        function saveAndShowFeedback() {
+            saveData();
+            const statusDiv = document.getElementById('saveStatus');
+            statusDiv.classList.add('show');
+            setTimeout(() => { statusDiv.classList.remove('show'); }, 3000);
+        }
+
+        function updateStats(workdays, marked, pending) {
+            document.getElementById('totalWorkdays').textContent = workdays;
+            document.getElementById('totalMarked').textContent = marked;
+            document.getElementById('totalPending').textContent = pending;
+            const rate = workdays > 0 ? Math.round((marked / workdays) * 100) : 0;
+            document.getElementById('responseRate').textContent = rate + '%';
+        }
+
+        function updateSummaryTable() {
+            console.log('updateSummaryTable chamada');
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+            const todayDate = today.getDate();
+
+            const cxasWithData = new Map();
+
+            for (const dateKey in markedDays) {
+                const parts = dateKey.split('|');
+                if (parts.length === 3) {
+                    const concessionaire = parts[0];
+                    const city = parts[1];
+                    const key = `${concessionaire}|${city}`;
+                    const cxaData = cxasList.find(c => c.concessionaire === concessionaire && c.city.replace(/\s+/g, ' ').trim() === city.replace(/\s+/g, ' ').trim());
+                    if (cxaData && !cxasWithData.has(key)) {
+                        cxasWithData.set(key, cxaData);
+                    }
+                }
+            }
+
+            const tbody = document.getElementById('summaryTableBody');
+            
+            if (cxasWithData.size === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="no-data-message">Nenhum CXA registrado ainda. Selecione e marque dias para visualizar o resumo consolidado.</td></tr>';
+                document.getElementById('deleteSelectedBtn').disabled = true;
+                document.getElementById('deleteSelectedBtn').style.opacity = '0.5';
+                return;
+            }
+
+            let html = '';
+
+            for (const [key, cxaData] of cxasWithData) {
+                const concessionaire = cxaData.concessionaire;
+                const city = cxaData.city;
+                let respondedDays = [];
+                let notRespondedDays = [];
+
+                for (let day = 1; day <= lastDay; day++) {
+                    const date = new Date(year, month, day);
+                    if (date.getDay() !== 0 && date.getDay() !== 6) {
+                        const dateKey = `${concessionaire}|${city}|${year}-${month}-${day}`;
+                        const isMarked = markedDays[dateKey] || false;
+                        if (isMarked) {
+                            respondedDays.push(day);
+                        } else {
+                            notRespondedDays.push(day);
+                        }
+                    }
+                }
+
+                const totalWorkdays = respondedDays.length + notRespondedDays.length;
+                const responseRate = totalWorkdays > 0 ? Math.round((respondedDays.length / totalWorkdays) * 100) : 0;
+
+                const todayKey = `${concessionaire}|${city}|${year}-${month}-${todayDate}`;
+                const isTodayMarked = markedDays[todayKey] || false;
+
+                let status;
+                if (totalWorkdays === 0) {
+                    status = '<span class="status-none">-</span>';
+                } else if (isCurrentMonth) {
+                    if (isTodayMarked) {
+                        status = '<span class="status-completed">✓ Recebido</span>';
+                    } else {
+                        status = '<span class="status-pending">⏳ Pendente</span>';
+                    }
+                } else {
+                    status = '<span class="status-completed">✓ Concluído</span>';
+                }
+
+                const uniqueKey = `${concessionaire}|${city}`;
+                html += `
+                    <tr class="summary-row" data-cxa="${uniqueKey}">
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="row-checkbox" onchange="toggleRowSelection(this)">
+                        </td>
+                        <td><strong>${concessionaire}</strong></td>
+                        <td>${city}</td>
+                        <td>${cxaData.state}</td>
+                        <td>${cxaData.responsible.split(' ')[0]}</td>
+                        <td>${status}</td>
+                        <td>${respondedDays.length > 0 ? respondedDays.join(', ') : '-'}</td>
+                        <td>${notRespondedDays.length > 0 ? notRespondedDays.join(', ') : '-'}</td>
+                        <td><strong>${responseRate}%</strong></td>
+                    </tr>
+                `;
+            }
+
+            console.log('Atualizando tbody com', cxasWithData.size, 'CXAs');
+            tbody.innerHTML = html;
+            console.log('tbody.innerHTML atualizado');
+            updateDeleteButtonState();
+        }
+
+        window.toggleRowSelection = function(checkbox) {
+            console.log('toggleRowSelection chamado, checked =', checkbox.checked);
+            
+            const row = checkbox.closest('tr');
+            if (!row) {
+                console.log('Row não encontrada!');
+                return;
+            }
+            
+            if (checkbox.checked) {
+                row.classList.add('selected');
+                console.log('Classe selected adicionada');
+            } else {
+                row.classList.remove('selected');
+                console.log('Classe selected removida');
+            }
+            updateDeleteButtonState();
+        };
+
+        function updateDeleteButtonState() {
+            const selectedRows = document.querySelectorAll('table tbody tr.selected');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            
+            console.log('updateDeleteButtonState: linhas selecionadas =', selectedRows.length);
+            
+            if (!deleteBtn) {
+                console.log('deleteBtn não encontrado!');
+                return;
+            }
+            
+            if (selectedRows.length > 0) {
+                deleteBtn.disabled = false;
+                deleteBtn.style.opacity = '1';
+                deleteBtn.style.cursor = 'pointer';
+                console.log('Botão habilitado');
+            } else {
+                deleteBtn.disabled = true;
+                deleteBtn.style.opacity = '0.5';
+                deleteBtn.style.cursor = 'not-allowed';
+                console.log('Botão desabilitado');
+            }
+        }
+
+        // Armazena dados pendentes de deleção
+        let pendingDelete = null;
+        let pendingClearAll = false;
+
+        window.showDeleteModal = function(rowsInfo) {
+            console.log('Mostrando modal de confirmação...');
+            
+            pendingDelete = rowsInfo;
+            
+            const message = rowsInfo.map(r => `• ${r.concessionaire} - ${r.city}`).join('\n');
+            document.getElementById('deleteConfirmMessage').textContent = `Deletar ${rowsInfo.length} linha(s)?\n\n${message}`;
+            
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            console.log('Modal exibido');
+        }
+
+        window.cancelDelete = function() {
+            console.log('Deleção cancelada pelo usuário');
+            pendingDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        }
+
+        window.confirmDelete = function() {
+            console.log('Deleção confirmada!');
+            
+            if (!pendingDelete) {
+                console.log('ERRO: pendingDelete é null');
+                return;
+            }
+
+            const rowsInfo = pendingDelete;
+            
+            // Fechar modal
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+
+            // Deletar dados
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            console.log(`Deletando dados para mês: ${month+1}/${year}`);
+
+            rowsInfo.forEach(row => {
+                console.log(`Deletando: ${row.concessionaire} | ${row.city}`);
+                
+                let deletedCount = 0;
+                for (let day = 1; day <= lastDay; day++) {
+                    const key = `${row.concessionaire}|${row.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                    if (markedDays[key]) {
+                        delete markedDays[key];
+                        deletedCount++;
+                    }
+                }
+                console.log(`Deletados ${deletedCount} registros de ${row.concessionaire}`);
+            });
+
+            console.log('Salvando dados no localStorage...');
+            saveData();
+            console.log('✓ Dados salvos!');
+
+            // Se um dos CXAs deletados está selecionado, limpar seleção
+            if (selectedCXA) {
+                const wasDeleted = rowsInfo.some(r => 
+                    r.concessionaire === selectedCXA.concessionaire && 
+                    r.city.replace(/\s+/g, ' ').trim() === selectedCXA.city.replace(/\s+/g, ' ').trim()
+                );
+                if (wasDeleted) {
+                    console.log('CXA selecionado foi deletado, limpando seleção');
+                    selectedCXA = null;
+                    document.getElementById('concessionaire').value = '';
+                    document.getElementById('city').value = '';
+                    document.getElementById('state').value = '';
+                    document.getElementById('responsible').value = '';
+                }
+            }
+
+            // Reconstruir tabela
+            console.log('Reconstruindo tabela...');
+            updateSummaryTable();
+            console.log('✓ Tabela reconstruída!');
+
+            // Mensagem de sucesso
+            const msg_success = `✓ ${rowsInfo.length} linha(s) deletada(s) com sucesso!`;
+            console.log(msg_success);
+            
+            const statusDiv = document.getElementById('saveStatus');
+            if (statusDiv) {
+                statusDiv.textContent = msg_success;
+                statusDiv.classList.add('show');
+                setTimeout(() => statusDiv.classList.remove('show'), 3000);
+            }
+            
+            console.log('=== FIM confirmDelete ===');
+            
+            pendingDelete = null;
+        }
+
+        window.deleteSelectedCXAs = function() {
+            console.log('=== INICIANDO deleteSelectedCXAs ===');
+            
+            // Buscar linhas selecionadas
+            const selectedRows = document.querySelectorAll('table tbody tr.selected');
+            
+            console.log('Linhas selecionadas encontradas:', selectedRows.length);
+            
+            if (selectedRows.length === 0) {
+                console.log('ERRO: Nenhuma linha selecionada');
+                alert('⚠️ Por favor, marque uma linha para deletar!');
+                return;
+            }
+
+            // Extrair informações das linhas selecionadas
+            const rowsInfo = [];
+            selectedRows.forEach((row, idx) => {
+                console.log(`Processando linha ${idx}`);
+                
+                const concessionaireCell = row.querySelector('td:nth-child(2)');
+                const cityCell = row.querySelector('td:nth-child(3)');
+                
+                const concessionaire = concessionaireCell?.textContent.trim();
+                const city = cityCell?.textContent.replace(/\s+/g, ' ').trim();
+                
+                console.log(`Extraído - Concessionário: "${concessionaire}", Cidade: "${city}"`);
+                
+                if (concessionaire && city) {
+                    rowsInfo.push({ concessionaire, city });
+                    console.log('Adicionado ao array rowsInfo');
+                }
+            });
+
+            console.log('Total de linhas para deletar:', rowsInfo.length);
+
+            if (rowsInfo.length === 0) {
+                console.log('ERRO: rowsInfo está vazio');
+                alert('❌ Erro: Não foi possível extrair informações das linhas selecionadas.');
+                return;
+            }
+
+            // Mostrar modal de confirmação
+            console.log('Abrindo modal de confirmação...');
+            showDeleteModal(rowsInfo);
+            
+            console.log('=== Modal aberto, aguardando confirmação ===');
+        };
+
+        function exportTableToExcel() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            let csv = '';
+
+            // Cabeçalho com apenas as 5 colunas solicitadas
+            const headers = ['Concessionário', 'Cidade', 'Estado', 'CXA Responsável', 'Taxa de Resposta'];
+            csv += headers.map(h => `"${h}"`).join(',') + '\n';
+
+            // Dados da tabela consolidada
+            const summaryTableBody = document.getElementById('summaryTableBody');
+            const trs = summaryTableBody.querySelectorAll('tr');
+            
+            trs.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length > 1) {
+                    // Extrair apenas as colunas: Concessionário (1), Cidade (2), Estado (3), CXA Responsável (4), Taxa (8)
+                    const rowData = [
+                        `"${tds[1].textContent.trim()}"`,  // Concessionário
+                        `"${tds[2].textContent.trim()}"`,  // Cidade
+                        `"${tds[3].textContent.trim()}"`,  // Estado
+                        `"${tds[4].textContent.trim()}"`,  // CXA Responsável
+                        `"${tds[8].textContent.trim()}"`,  // Taxa de Resposta (última coluna)
+                    ];
+                    csv += rowData.join(',') + '\n';
+                }
+            });
+
+            // Criar e baixar arquivo CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `resumo_consolidado_${year}_${String(month + 1).padStart(2, '0')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function saveData() {
+            const data = { selectedCXA: selectedCXA, markedDays: markedDays };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (parsed.selectedCXA) {
+                    selectedCXA = parsed.selectedCXA;
+                    // Normalizar city se foi carregado
+                    if (selectedCXA.city) {
+                        selectedCXA.city = selectedCXA.city.replace(/\s+/g, ' ').trim();
+                    }
+                    document.getElementById('concessionaire').value = selectedCXA.concessionaire;
+                    document.getElementById('city').value = selectedCXA.city;
+                    document.getElementById('state').value = selectedCXA.state;
+                    document.getElementById('responsible').value = selectedCXA.responsible.split(' ')[0];
+                }
+                markedDays = parsed.markedDays || {};
+                
+                // Normalizar TODAS as chaves do markedDays para garantir 100% de consistência
+                const normalizedMarkedDays = {};
+                for (const key in markedDays) {
+                    const parts = key.split('|');
+                    if (parts.length === 3) {
+                        const concessionaire = parts[0].replace(/\s+/g, ' ').trim();
+                        const city = parts[1].replace(/\s+/g, ' ').trim();
+                        const dateTime = parts[2];
+                        const normalizedKey = `${concessionaire}|${city}|${dateTime}`;
+                        normalizedMarkedDays[normalizedKey] = markedDays[key];
+                    } else {
+                        normalizedMarkedDays[key] = markedDays[key];
+                    }
+                }
+                markedDays = normalizedMarkedDays;
+                
+                // Salvar dados normalizados para garantir consistência
+                saveData();
+            }
+        }
+
+        function newCXA() {
+            selectedCXA = null;
+            document.getElementById('cxaSearch').value = '';
+            document.getElementById('cxaSearch').focus();
+            document.getElementById('concessionaire').value = '';
+            document.getElementById('city').value = '';
+            document.getElementById('state').value = '';
+            document.getElementById('responsible').value = '';
+            saveData();
+            renderCalendar();
+        }
+
+        function exportTXT() {
+            if (!selectedCXA) { alert('Selecione um CXA primeiro'); return; }
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+            let report = `RELATÓRIO DE RESPOSTAS CXA\n=${'='.repeat(80)}\n\n`;
+            report += `Concessionário: ${selectedCXA.concessionaire}\nCidade: ${selectedCXA.city}\nEstado: ${selectedCXA.state}\nCXA Responsável: ${selectedCXA.responsible}\nE-mail: ${selectedCXA.email}\nTelefone: ${selectedCXA.phone || 'N/A'}\n\nPeríodo: ${monthNames[month]} de ${year}\nData do Relatório: ${new Date().toLocaleDateString('pt-BR')}\n\nMARCAÇÕES POR DIA:\n${'-'.repeat(80)}\n`;
+
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            let workdayCount = 0, markedCount = 0;
+
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                const dateKey = `${selectedCXA.concessionaire}|${selectedCXA.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                const isMarked = markedDays[dateKey] || false;
+
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workdayCount++;
+                    const status = isMarked ? '✓ RESPONDIDO' : '✗ PENDENTE';
+                    const dayName = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'][dayOfWeek];
+                    report += `${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')} (${dayName}) - ${status}\n`;
+                    if (isMarked) markedCount++;
+                }
+            }
+
+            report += `${'-'.repeat(80)}\n\nRESUMO:\nTotal de Dias Úteis: ${workdayCount}\nRespostas Recebidas: ${markedCount}\nRespostas Pendentes: ${workdayCount - markedCount}\nTaxa de Resposta: ${workdayCount > 0 ? Math.round((markedCount / workdayCount) * 100) : 0}%\n`;
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio_cxa_${selectedCXA.concessionaire.replace(/\s+/g, '_')}_${monthNames[month].toLowerCase()}_${year}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function exportXLSX() {
+            if (!selectedCXA) { alert('Selecione um CXA primeiro'); return; }
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            const data = [
+                ['RELATÓRIO DE RESPOSTAS CXA'],
+                [],
+                ['Concessionário:', selectedCXA.concessionaire],
+                ['Cidade:', selectedCXA.city],
+                ['Estado:', selectedCXA.state],
+                ['CXA Responsável:', selectedCXA.responsible],
+                ['E-mail:', selectedCXA.email],
+                ['Telefone:', selectedCXA.phone || 'N/A'],
+                ['Período:', `${monthNames[month]} de ${year}`],
+                ['Data do Relatório:', new Date().toLocaleDateString('pt-BR')],
+                [],
+                ['DATA', 'DIA DA SEMANA', 'STATUS']
+            ];
+
+            let workdayCount = 0, markedCount = 0;
+
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                const dateKey = `${selectedCXA.concessionaire}|${selectedCXA.city.replace(/\s+/g, ' ').trim()}|${year}-${month}-${day}`;
+                const isMarked = markedDays[dateKey] || false;
+
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workdayCount++;
+                    const status = isMarked ? 'RESPONDIDO' : 'PENDENTE';
+                    const dayName = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'][dayOfWeek];
+                    data.push([`${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}`, dayName, status]);
+                    if (isMarked) markedCount++;
+                }
+            }
+
+            data.push([]);
+            data.push(['RESUMO']);
+            data.push(['Total de Dias Úteis:', workdayCount]);
+            data.push(['Respostas Recebidas:', markedCount]);
+            data.push(['Respostas Pendentes:', workdayCount - markedCount]);
+            const rate = workdayCount > 0 ? Math.round((markedCount / workdayCount) * 100) : 0;
+            data.push(['Taxa de Resposta:', `${rate}%`]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }];
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório CXA');
+            XLSX.writeFile(wb, `relatorio_cxa_${selectedCXA.concessionaire.replace(/\s+/g, '_')}_${monthNames[month].toLowerCase()}_${year}.xlsx`);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+    <!-- Modal de Confirmação de Deleção -->
+    <!-- Modal de Confirmação de Limpar Tudo -->
+    <div id="clearAllModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+        <div class="modal-content" style="background: var(--light-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); align-items: center; justify-content: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <h2 style="margin-top: 0; color: #ff9800;">⚠️ Limpar Todos os Marcadores</h2>
+            <div id="clearAllMessage" style="margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 1rem; font-weight: bold; color: #000000;"></div>
+            <p style="color: #333333; font-size: 0.95rem;">Apenas os marcadores do mês atual serão removidos.</p>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button onclick="window.confirmClearAll()" style="flex: 1; padding: 12px; background: #ff9800; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                    ✓ SIM, Limpar
+                </button>
+                <button onclick="window.cancelClearAll()" style="flex: 1; padding: 12px; background: #757575; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                    ✕ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteConfirmModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+        <div class="modal-content" style="background: var(--light-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h2 style="margin-top: 0; color: #d32f2f;">⚠️ Confirmar Deleção</h2>
+            <div id="deleteConfirmMessage" style="margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 1.1rem; font-weight: bold; color: #000000;"></div>
+            <p style="color: #333333; font-size: 0.95rem;">⏳ O histórico de outros meses será mantido.</p>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button onclick="window.confirmDelete()" style="flex: 1; padding: 12px; background: #d32f2f; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                    ✓ SIM, Deletar
+                </button>
+                <button onclick="window.cancelDelete()" style="flex: 1; padding: 12px; background: #757575; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                    ✕ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
